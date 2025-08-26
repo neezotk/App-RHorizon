@@ -35,10 +35,11 @@ services:
       - "5000:5000"
 
   frontend:
-    build:
-      context: .
-      dockerfile: Dockerfile.frontend
-    ports:
-      - "80:80"
-    depends_on:
-      - backend
+  build:
+    context: .
+    dockerfile: Dockerfile.frontend
+  depends_on:
+    backend:
+      condition: service_healthy
+  ports:
+    - "80:80"
