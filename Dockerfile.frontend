@@ -1,11 +1,27 @@
 # --- build stage ---
 FROM node:20-alpine AS build
 WORKDIR /app
-# copie package.json + lockfile si présent
-COPY frontend/package.json frontend/package-lock.json ./
-# ci = install strict basé sur lockfile
-RUN npm ci --no-audit --no-fund
+
+# 1) Copie uniquement package.json
+COPY frontend/package.json ./
+
+# 2) Config réseau npm + registry (moins d'échecs réseau)
+RUN npm set registry https://registry.npmjs.org \
+ && npm set fetch-retries 5 \
+ && npm set fetch-retry-factor 2 \
+ && npm set fetch-retry-maxtimeout 120000 \
+ && npm set prefer-online true
+
+# 3) Génère un lock propre dans l'image (sans installer les deps)
+RUN npm install --package-lock-only --no-audit --no-fund
+
+# 4) Copie le reste du code
 COPY frontend/ .
+
+# 5) Install strict depuis le lock fraîchement généré
+RUN npm ci --no-audit --no-fund
+
+# 6) Build Vite
 RUN npm run build
 
 # --- runtime stage ---
